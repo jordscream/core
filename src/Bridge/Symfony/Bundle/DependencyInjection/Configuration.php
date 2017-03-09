@@ -59,7 +59,7 @@ final class Configuration implements ConfigurationInterface
                 ->arrayNode('collection')
                     ->addDefaultsIfNotSet()
                     ->children()
-                        ->scalarNode('order')->defaultNull()->info('The default order of results.')->end()
+                        ->scalarNode('order')->defaultValue('DESC')->info('The default order of results.')->end()
                         ->scalarNode('order_parameter_name')->defaultValue('order')->cannotBeEmpty()->info('The name of the query parameter to order results.')->end()
                         ->arrayNode('pagination')
                             ->canBeDisabled()
