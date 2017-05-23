@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Tests\Bridge\Symfony\Bundle\DependencyInjection;
 
 use ApiPlatform\Core\Bridge\Symfony\Bundle\DependencyInjection\Configuration;
@@ -85,6 +87,7 @@ class ConfigurationTest extends \PHPUnit_Framework_TestCase
                 'enabled' => true,
                 'max_joins' => 30,
                 'force_eager' => true,
+                'fetch_partial' => false,
             ],
             'collection' => [
                 'order' => 'ASC',
@@ -105,6 +108,7 @@ class ConfigurationTest extends \PHPUnit_Framework_TestCase
                 'yaml' => [],
                 'xml' => [],
             ],
+            'api_resources_directory' => 'Entity',
         ], $config);
     }
 

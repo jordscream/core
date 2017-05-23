@@ -9,7 +9,9 @@
  * file that was distributed with this source code.
  */
 
-namespace ApiPlatform\Core\Tests\Doctrine\Orm\Filter;
+declare(strict_types=1);
+
+namespace ApiPlatform\Core\Tests\Bridge\Doctrine\Orm\Filter;
 
 use ApiPlatform\Core\Api\IriConverterInterface;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\SearchFilter;
@@ -763,6 +765,29 @@ class SearchFilterTest extends KernelTestCase
         $filter->apply($queryBuilder, new QueryNameGenerator(), $this->resourceClass, 'op');
         $actual = strtolower($queryBuilder->getQuery()->getDQL());
         $expected = strtolower(sprintf('SELECT o FROM %s o inner join o.relatedDummy relateddummy_a1 inner join relateddummy_a1.thirdLevel thirdLevel_a1 WHERE relateddummy_a1.symfony = :symfony_p1 and thirdLevel_a1.level = :level_p2', Dummy::class));
+        $this->assertEquals($actual, $expected);
+    }
+
+    public function testJoinLeft()
+    {
+        $request = Request::create('/api/dummies', 'GET', ['relatedDummy.symfony' => 'foo', 'relatedDummy.thirdLevel.level' => 'bar']);
+        $requestStack = new RequestStack();
+        $requestStack->push($request);
+        $queryBuilder = $this->repository->createQueryBuilder('o');
+        $queryBuilder->leftJoin('o.relatedDummy', 'relateddummy_a1');
+
+        $filter = new SearchFilter(
+            $this->managerRegistry,
+            $requestStack,
+            $this->iriConverter,
+            $this->propertyAccessor,
+            null,
+            ['relatedDummy.symfony' => null, 'relatedDummy.thirdLevel.level' => null]
+        );
+
+        $filter->apply($queryBuilder, new QueryNameGenerator(), $this->resourceClass, 'op');
+        $actual = strtolower($queryBuilder->getQuery()->getDQL());
+        $expected = strtolower(sprintf('SELECT o FROM %s o left join o.relatedDummy relateddummy_a1 left join relateddummy_a1.thirdLevel thirdLevel_a1 WHERE relateddummy_a1.symfony = :symfony_p1 and thirdLevel_a1.level = :level_p2', Dummy::class));
         $this->assertEquals($actual, $expected);
     }
 }

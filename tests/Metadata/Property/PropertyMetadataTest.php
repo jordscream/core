@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Tests\Metadata\Property;
 
 use ApiPlatform\Core\Metadata\Property\PropertyMetadata;
@@ -74,6 +76,7 @@ class PropertyMetadataTest extends \PHPUnit_Framework_TestCase
         $newMetadata = $metadata->withAttributes(['a' => 'b']);
         $this->assertNotSame($metadata, $newMetadata);
         $this->assertEquals(['a' => 'b'], $newMetadata->getAttributes());
+        $this->assertEquals('b', $newMetadata->getAttribute('a'));
     }
 
     public function testShouldReturnRequiredFalseWhenRequiredTrueIsSetButMaskedByWritableFalse()

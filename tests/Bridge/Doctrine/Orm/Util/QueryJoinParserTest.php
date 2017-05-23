@@ -9,7 +9,9 @@
  * file that was distributed with this source code.
  */
 
-namespace ApiPlatform\Core\Tests\Doctrine\Util;
+declare(strict_types=1);
+
+namespace ApiPlatform\Core\Tests\Bridge\Doctrine\Orm\Util;
 
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryJoinParser;
 use Doctrine\Common\Persistence\ManagerRegistry;

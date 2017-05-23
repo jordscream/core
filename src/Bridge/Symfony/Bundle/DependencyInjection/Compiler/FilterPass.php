@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Bridge\Symfony\Bundle\DependencyInjection\Compiler;
 
 use ApiPlatform\Core\Exception\RuntimeException;
@@ -43,6 +45,7 @@ final class FilterPass implements CompilerPassInterface
             }
         }
 
-        $container->getDefinition('api_platform.filters')->addArgument($filters);
+        $container->getDefinition('api_platform.filter_locator')->addArgument($filters);
+        $container->getDefinition('api_platform.filter_collection_factory')->addArgument(array_keys($filters));
     }
 }

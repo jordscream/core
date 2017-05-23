@@ -9,9 +9,12 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Serializer;
 
 use ApiPlatform\Core\Api\IriConverterInterface;
+use ApiPlatform\Core\Api\OperationType;
 use ApiPlatform\Core\Api\ResourceClassResolverInterface;
 use ApiPlatform\Core\Exception\InvalidArgumentException;
 use ApiPlatform\Core\Exception\ItemNotFoundException;
@@ -130,8 +133,9 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer
             $propertyMetadata = $this->propertyMetadataFactory->create($context['resource_class'], $propertyName, $options);
 
             if (
-                (isset($context['api_normalize']) && $propertyMetadata->isReadable()) ||
-                (isset($context['api_denormalize']) && $propertyMetadata->isWritable())
+                $this->isAllowedAttribute($classOrObject, $propertyName, null, $context) &&
+                ((isset($context['api_normalize']) && $propertyMetadata->isReadable()) ||
+                (isset($context['api_denormalize']) && $propertyMetadata->isWritable()))
             ) {
                 $allowedAttributes[] = $propertyName;
             }
@@ -179,7 +183,7 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer
             $this->setValue(
                 $object,
                 $attribute,
-                $this->denormalizeRelation($attribute, $propertyMetadata, $className, $value, $format, $context)
+                $this->denormalizeRelation($attribute, $propertyMetadata, $className, $value, $format, $this->createChildContext($context, $attribute))
             );
 
             return;
@@ -202,7 +206,7 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer
     protected function validateType(string $attribute, Type $type, $value, string $format = null)
     {
         $builtinType = $type->getBuiltinType();
-        if (Type::BUILTIN_TYPE_FLOAT === $builtinType && false !== strpos($format, 'json')) {
+        if (Type::BUILTIN_TYPE_FLOAT === $builtinType && null !== $format && false !== strpos($format, 'json')) {
             $isValid = is_float($value) || is_int($value);
         } else {
             $isValid = call_user_func('is_'.$builtinType, $value);
@@ -250,7 +254,7 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer
                 );
             }
 
-            $values[$index] = $this->denormalizeRelation($attribute, $propertyMetadata, $className, $obj, $format, $context);
+            $values[$index] = $this->denormalizeRelation($attribute, $propertyMetadata, $className, $obj, $format, $this->createChildContext($context, $attribute));
         }
 
         return $values;
@@ -386,19 +390,26 @@ abstract class AbstractItemNormalizer extends AbstractObjectNormalizer
         ) {
             $value = [];
             foreach ($attributeValue as $index => $obj) {
-                $value[$index] = $this->normalizeRelation($propertyMetadata, $obj, $className, $format, $context);
+                $value[$index] = $this->normalizeRelation($propertyMetadata, $obj, $className, $format, $this->createChildContext($context, $attribute));
             }
 
             return $value;
         }
 
         if (
-            $attributeValue &&
             $type &&
             ($className = $type->getClassName()) &&
             $this->resourceClassResolver->isResourceClass($className)
         ) {
-            return $this->normalizeRelation($propertyMetadata, $attributeValue, $className, $format, $context);
+            /*
+             * On a subresource, we know the value of the identifiers.
+             * If attributeValue is null, meaning that it hasn't been returned by the DataProvider, get the item Iri
+             */
+            if (null === $attributeValue && $context['operation_type'] === OperationType::SUBRESOURCE && isset($context['subresource_resources'][$className])) {
+                return $this->iriConverter->getItemIriFromResourceClass($className, $context['subresource_resources'][$className]);
+            } elseif ($attributeValue) {
+                return $this->normalizeRelation($propertyMetadata, $attributeValue, $className, $format, $this->createChildContext($context, $attribute));
+            }
         }
 
         return $this->serializer->normalize($attributeValue, $format, $context);

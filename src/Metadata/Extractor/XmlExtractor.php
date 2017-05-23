@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Metadata\Extractor;
 
 use ApiPlatform\Core\Exception\InvalidArgumentException;
@@ -73,7 +75,7 @@ final class XmlExtractor extends AbstractExtractor
         $operationsParent = $operationType.'s';
 
         if (!isset($resource->$operationsParent)) {
-            return;
+            return null;
         }
 
         return $this->getAttributes($resource->$operationsParent, $operationType);
@@ -128,6 +130,7 @@ final class XmlExtractor extends AbstractExtractor
                 'identifier' => $this->phpize($property, 'identifier', 'bool'),
                 'iri' => $this->phpize($property, 'iri', 'string'),
                 'attributes' => $this->getAttributes($property, 'attribute'),
+                'subresource' => $this->phpize($property, 'subresource', 'bool'),
             ];
         }
 
@@ -146,15 +149,16 @@ final class XmlExtractor extends AbstractExtractor
     private function phpize(\SimpleXMLElement $array, string $key, string $type)
     {
         if (!isset($array[$key])) {
-            return;
+            return null;
         }
 
         switch ($type) {
             case 'string':
                 return (string) $array[$key];
-
             case 'bool':
                 return (bool) XmlUtils::phpize($array[$key]);
         }
+
+        return null;
     }
 }

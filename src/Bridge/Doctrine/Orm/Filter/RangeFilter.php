@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Bridge\Doctrine\Orm\Filter;
 
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGeneratorInterface;
@@ -62,7 +64,7 @@ class RangeFilter extends AbstractFilter
     {
         if (
             !is_array($values) ||
-            !$this->isPropertyEnabled($property) ||
+            !$this->isPropertyEnabled($property, $resourceClass) ||
             !$this->isPropertyMapped($property, $resourceClass)
         ) {
             return;
@@ -71,8 +73,8 @@ class RangeFilter extends AbstractFilter
         $alias = 'o';
         $field = $property;
 
-        if ($this->isPropertyNested($property)) {
-            list($alias, $field) = $this->addJoinsForNestedProperty($property, $alias, $queryBuilder, $queryNameGenerator);
+        if ($this->isPropertyNested($property, $resourceClass)) {
+            list($alias, $field) = $this->addJoinsForNestedProperty($property, $alias, $queryBuilder, $queryNameGenerator, $resourceClass);
         }
 
         foreach ($values as $operator => $value) {
@@ -127,7 +129,6 @@ class RangeFilter extends AbstractFilter
                     ->setParameter(sprintf('%s_2', $valueParameter), $rangeValue[1]);
 
                 break;
-
             case self::PARAMETER_GREATER_THAN:
                 if (!is_numeric($value)) {
                     $this->logger->notice('Invalid filter ignored', [
@@ -142,7 +143,6 @@ class RangeFilter extends AbstractFilter
                     ->setParameter($valueParameter, $value);
 
                 break;
-
             case self::PARAMETER_GREATER_THAN_OR_EQUAL:
                 if (!is_numeric($value)) {
                     $this->logger->notice('Invalid filter ignored', [
@@ -157,7 +157,6 @@ class RangeFilter extends AbstractFilter
                     ->setParameter($valueParameter, $value);
 
                 break;
-
             case self::PARAMETER_LESS_THAN:
                 if (!is_numeric($value)) {
                     $this->logger->notice('Invalid filter ignored', [
@@ -172,7 +171,6 @@ class RangeFilter extends AbstractFilter
                     ->setParameter($valueParameter, $value);
 
                 break;
-
             case self::PARAMETER_LESS_THAN_OR_EQUAL:
                 if (!is_numeric($value)) {
                     $this->logger->notice('Invalid filter ignored', [

@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Bridge\Doctrine\Orm\Filter;
 
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGeneratorInterface;
@@ -103,7 +105,7 @@ class OrderFilter extends AbstractFilter
      */
     protected function filterProperty(string $property, $direction, QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, string $operationName = null)
     {
-        if (!$this->isPropertyEnabled($property) || !$this->isPropertyMapped($property, $resourceClass)) {
+        if (!$this->isPropertyEnabled($property, $resourceClass) || !$this->isPropertyMapped($property, $resourceClass)) {
             return;
         }
 
@@ -113,15 +115,15 @@ class OrderFilter extends AbstractFilter
         }
 
         $direction = strtoupper($direction);
-        if (!in_array($direction, ['ASC', 'DESC'])) {
+        if (!in_array($direction, ['ASC', 'DESC'], true)) {
             return;
         }
 
         $alias = 'o';
         $field = $property;
 
-        if ($this->isPropertyNested($property)) {
-            list($alias, $field) = $this->addJoinsForNestedProperty($property, $alias, $queryBuilder, $queryNameGenerator);
+        if ($this->isPropertyNested($property, $resourceClass)) {
+            list($alias, $field) = $this->addJoinsForNestedProperty($property, $alias, $queryBuilder, $queryNameGenerator, $resourceClass);
         }
 
         if (null !== $nullsComparison = $this->properties[$property]['nulls_comparison'] ?? null) {
@@ -139,7 +141,7 @@ class OrderFilter extends AbstractFilter
     /**
      * {@inheritdoc}
      */
-    protected function extractProperties(Request $request): array
+    protected function extractProperties(Request $request/*, string $resourceClass*/): array
     {
         return $request->query->get($this->orderParameterName, []);
     }

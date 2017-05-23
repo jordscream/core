@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Metadata\Property\Factory;
 
 use ApiPlatform\Core\Exception\PropertyNotFoundException;
@@ -67,7 +69,8 @@ final class ExtractorPropertyMetadataFactory implements PropertyMetadataFactoryI
             $propertyMetadata['identifier'],
             $propertyMetadata['iri'],
             null,
-            $propertyMetadata['attributes']
+            $propertyMetadata['attributes'],
+            $propertyMetadata['subresource']
         );
     }
 
@@ -111,6 +114,7 @@ final class ExtractorPropertyMetadataFactory implements PropertyMetadataFactoryI
             'identifier' => 'is',
             'iri' => 'get',
             'attributes' => 'get',
+            'subresource' => 'has',
         ];
 
         foreach ($metadataAccessors as $metadataKey => $accessorPrefix) {

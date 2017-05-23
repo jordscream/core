@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Bridge\Symfony\Routing;
 
 use ApiPlatform\Core\Exception\InvalidArgumentException;
@@ -23,12 +25,12 @@ interface RouteNameResolverInterface
     /**
      * Finds the route name for a resource.
      *
-     * @param string $resourceClass
-     * @param bool   $collection
+     * @param string      $resourceClass
+     * @param bool|string $operationType
      *
      * @throws InvalidArgumentException
      *
      * @return string
      */
-    public function getRouteName(string $resourceClass, bool $collection): string;
+    public function getRouteName(string $resourceClass, $operationType /**, array $context = [] **/): string;
 }

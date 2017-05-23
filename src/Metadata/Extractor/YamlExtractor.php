@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Metadata\Extractor;
 
 use ApiPlatform\Core\Exception\InvalidArgumentException;
@@ -30,7 +32,7 @@ final class YamlExtractor extends AbstractExtractor
     protected function extractPath(string $path)
     {
         try {
-            $resourcesYaml = Yaml::parse(file_get_contents($path));
+            $resourcesYaml = Yaml::parse(file_get_contents($path), Yaml::PARSE_KEYS_AS_STRINGS);
         } catch (ParseException $e) {
             $e->setParsedFile($path);
 
@@ -105,6 +107,7 @@ final class YamlExtractor extends AbstractExtractor
                 'identifier' => $this->phpize($propertyValues, 'identifier', 'bool'),
                 'iri' => $this->phpize($propertyValues, 'iri', 'string'),
                 'attributes' => $propertyValues['attributes'] ?? null,
+                'subresource' => $this->phpize($propertyValues, 'subresource', 'bool'),
             ];
         }
     }
@@ -123,7 +126,7 @@ final class YamlExtractor extends AbstractExtractor
     private function phpize(array $array, string $key, string $type)
     {
         if (!isset($array[$key])) {
-            return;
+            return null;
         }
 
         switch ($type) {
@@ -132,7 +135,6 @@ final class YamlExtractor extends AbstractExtractor
                     return $array[$key];
                 }
                 break;
-
             case 'string':
                 if (is_string($array[$key])) {
                     return $array[$key];

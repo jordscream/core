@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Bridge\Doctrine\Orm\Filter;
 
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGeneratorInterface;
@@ -66,7 +68,7 @@ class DateFilter extends AbstractFilter
         // Expect $values to be an array having the period as keys and the date value as values
         if (
             !is_array($values) ||
-            !$this->isPropertyEnabled($property) ||
+            !$this->isPropertyEnabled($property, $resourceClass) ||
             !$this->isPropertyMapped($property, $resourceClass) ||
             !$this->isDateField($property, $resourceClass)
         ) {
@@ -76,8 +78,8 @@ class DateFilter extends AbstractFilter
         $alias = 'o';
         $field = $property;
 
-        if ($this->isPropertyNested($property)) {
-            list($alias, $field) = $this->addJoinsForNestedProperty($property, $alias, $queryBuilder, $queryNameGenerator);
+        if ($this->isPropertyNested($property, $resourceClass)) {
+            list($alias, $field) = $this->addJoinsForNestedProperty($property, $alias, $queryBuilder, $queryNameGenerator, $resourceClass);
         }
 
         $nullManagement = $this->properties[$property] ?? null;
@@ -157,7 +159,7 @@ class DateFilter extends AbstractFilter
      */
     protected function isDateField(string $property, string $resourceClass): bool
     {
-        $propertyParts = $this->splitPropertyParts($property);
+        $propertyParts = $this->splitPropertyParts($property, $resourceClass);
         $metadata = $this->getNestedMetadata($resourceClass, $propertyParts['associations']);
 
         return isset(self::DOCTRINE_DATE_TYPES[$metadata->getTypeOfField($propertyParts['field'])]);

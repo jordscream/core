@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\JsonLd\Serializer;
 
 use ApiPlatform\Core\Api\IriConverterInterface;
@@ -63,6 +65,9 @@ final class ItemNormalizer extends AbstractItemNormalizer
         $resourceClass = $this->resourceClassResolver->getResourceClass($object, $context['resource_class'] ?? null, true);
         $resourceMetadata = $this->resourceMetadataFactory->create($resourceClass);
         $data = $this->addJsonLdContext($this->contextBuilder, $resourceClass, $context);
+
+        // Use resolved resource class instead of given resource class to support multiple inheritance child types
+        $context['resource_class'] = $resourceClass;
 
         $rawData = parent::normalize($object, $format, $context);
         if (!is_array($rawData)) {

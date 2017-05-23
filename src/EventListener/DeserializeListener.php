@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\EventListener;
 
 use ApiPlatform\Core\Serializer\SerializerContextBuilderInterface;
@@ -86,7 +88,7 @@ final class DeserializeListener
         }
 
         $format = $request->getFormat($contentType);
-        if (!isset($this->formats[$format])) {
+        if (null === $format || !isset($this->formats[$format])) {
             $supportedMimeTypes = [];
             foreach ($this->formats as $mimeTypes) {
                 foreach ($mimeTypes as $mimeType) {

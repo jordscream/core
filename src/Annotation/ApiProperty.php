@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Annotation;
 
 /**
@@ -65,4 +67,9 @@ final class ApiProperty
      * @var array
      */
     public $attributes = [];
+
+    /**
+     * @var bool
+     */
+    public $subresource;
 }

@@ -9,7 +9,9 @@
  * file that was distributed with this source code.
  */
 
-namespace ApiPlatform\Core\tests\Metadata\Extractor;
+declare(strict_types=1);
+
+namespace ApiPlatform\Core\Tests\Metadata\Extractor;
 
 use ApiPlatform\Core\Metadata\Extractor\YamlExtractor;
 
@@ -25,5 +27,21 @@ class YamlExtractorTest extends \PHPUnit_Framework_TestCase
     public function testInvalidProperty()
     {
         (new YamlExtractor([__DIR__.'/../../Fixtures/FileConfigurations/badpropertytype.yml']))->getResources();
+    }
+
+    /**
+     * @expectedException \ApiPlatform\Core\Exception\InvalidArgumentException
+     * @expectedExceptionMessageRegExp /Unable to parse in ".+\/\.\.\/\.\.\/Fixtures\/FileConfigurations\/parse_exception.yml"/
+     */
+    public function testParseException()
+    {
+        (new YamlExtractor([__DIR__.'/../../Fixtures/FileConfigurations/parse_exception.yml']))->getResources();
+    }
+
+    public function testEmptyResources()
+    {
+        $resources = (new YamlExtractor([__DIR__.'/../../Fixtures/FileConfigurations/resources_empty.yml']))->getResources();
+
+        $this->assertEmpty($resources);
     }
 }

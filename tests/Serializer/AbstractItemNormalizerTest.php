@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Tests\Serializer;
 
 use ApiPlatform\Core\Api\IriConverterInterface;
@@ -74,16 +76,20 @@ class AbstractItemNormalizerTest extends \PHPUnit_Framework_TestCase
 
         $dummy = new Dummy();
         $dummy->setName('foo');
+        $dummy->setAlias('ignored');
         $dummy->setRelatedDummy($relatedDummy);
         $dummy->relatedDummies->add(new RelatedDummy());
 
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
         $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn(
-            new PropertyNameCollection(['name', 'relatedDummy', 'relatedDummies'])
+            new PropertyNameCollection(['name', 'alias', 'relatedDummy', 'relatedDummies'])
         )->shouldBeCalled();
 
         $propertyMetadataFactoryProphecy = $this->prophesize(PropertyMetadataFactoryInterface::class);
         $propertyMetadataFactoryProphecy->create(Dummy::class, 'name', [])->willReturn(
+            new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), '', true)
+        )->shouldBeCalled();
+        $propertyMetadataFactoryProphecy->create(Dummy::class, 'alias', [])->willReturn(
             new PropertyMetadata(new Type(Type::BUILTIN_TYPE_STRING), '', true)
         )->shouldBeCalled();
         $propertyMetadataFactoryProphecy->create(Dummy::class, 'relatedDummy', [])->willReturn(
@@ -132,6 +138,7 @@ class AbstractItemNormalizerTest extends \PHPUnit_Framework_TestCase
             $propertyAccesorProphecy->reveal(),
         ]);
         $normalizer->setSerializer($serializerProphecy->reveal());
+        $normalizer->setIgnoredAttributes(['alias']);
 
         $this->assertEquals([
             'name' => 'foo',

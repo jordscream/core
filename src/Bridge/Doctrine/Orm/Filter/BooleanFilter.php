@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Bridge\Doctrine\Orm\Filter;
 
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGeneratorInterface;
@@ -63,7 +65,7 @@ class BooleanFilter extends AbstractFilter
     protected function filterProperty(string $property, $value, QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, string $operationName = null)
     {
         if (
-            !$this->isPropertyEnabled($property) ||
+            !$this->isPropertyEnabled($property, $resourceClass) ||
             !$this->isPropertyMapped($property, $resourceClass) ||
             !$this->isBooleanField($property, $resourceClass)
         ) {
@@ -90,9 +92,10 @@ class BooleanFilter extends AbstractFilter
         $alias = 'o';
         $field = $property;
 
-        if ($this->isPropertyNested($property)) {
-            list($alias, $field) = $this->addJoinsForNestedProperty($property, $alias, $queryBuilder, $queryNameGenerator);
+        if ($this->isPropertyNested($property, $resourceClass)) {
+            list($alias, $field) = $this->addJoinsForNestedProperty($property, $alias, $queryBuilder, $queryNameGenerator, $resourceClass);
         }
+
         $valueParameter = $queryNameGenerator->generateParameterName($field);
 
         $queryBuilder
@@ -110,7 +113,7 @@ class BooleanFilter extends AbstractFilter
      */
     protected function isBooleanField(string $property, string $resourceClass): bool
     {
-        $propertyParts = $this->splitPropertyParts($property);
+        $propertyParts = $this->splitPropertyParts($property, $resourceClass);
         $metadata = $this->getNestedMetadata($resourceClass, $propertyParts['associations']);
 
         return DBALType::BOOLEAN === $metadata->getTypeOfField($propertyParts['field']);

@@ -9,7 +9,9 @@
  * file that was distributed with this source code.
  */
 
-namespace ApiPlatform\Core\Tests\Bridge\Symfony\Action;
+declare(strict_types=1);
+
+namespace ApiPlatform\Core\Tests\Bridge\Symfony\Bundle\Action;
 
 use ApiPlatform\Core\Bridge\Symfony\Bundle\Action\SwaggerUiAction;
 use ApiPlatform\Core\Documentation\Documentation;
@@ -61,7 +63,7 @@ class SwaggerUiActionTest extends \PHPUnit_Framework_TestCase
         $postRequest->setMethod('POST');
 
         $twigCollectionProphecy = $this->prophesize(\Twig_Environment::class);
-        $twigCollectionProphecy->render('ApiPlatformBundle:SwaggerUi:index.html.twig', [
+        $twigCollectionProphecy->render('@ApiPlatform/SwaggerUi/index.html.twig', [
             'title' => '',
             'description' => '',
             'formats' => [],
@@ -86,7 +88,7 @@ class SwaggerUiActionTest extends \PHPUnit_Framework_TestCase
         ])->shouldBeCalled();
 
         $twigItemProphecy = $this->prophesize(\Twig_Environment::class);
-        $twigItemProphecy->render('ApiPlatformBundle:SwaggerUi:index.html.twig', [
+        $twigItemProphecy->render('@ApiPlatform/SwaggerUi/index.html.twig', [
             'title' => '',
             'description' => '',
             'formats' => [],
@@ -129,7 +131,7 @@ class SwaggerUiActionTest extends \PHPUnit_Framework_TestCase
         $normalizerProphecy->normalize(Argument::type(Documentation::class), 'json')->willReturn(['Hello' => 'world'])->shouldBeCalled();
 
         $twigProphecy = $this->prophesize(\Twig_Environment::class);
-        $twigProphecy->render('ApiPlatformBundle:SwaggerUi:index.html.twig', [
+        $twigProphecy->render('@ApiPlatform/SwaggerUi/index.html.twig', [
             'title' => '',
             'description' => '',
             'formats' => [],

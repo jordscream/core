@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\EventListener;
 
 use Negotiation\Negotiator;
@@ -74,7 +76,7 @@ final class AddFormatListener
         }
 
         // Then use the Symfony request format if available and applicable
-        $requestFormat = $request->getRequestFormat(null) ?: null;
+        $requestFormat = $request->getRequestFormat('') ?: null;
         if (null !== $requestFormat) {
             $mimeType = $request->getMimeType($requestFormat);
 

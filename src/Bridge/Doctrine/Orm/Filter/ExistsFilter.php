@@ -9,15 +9,14 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Bridge\Doctrine\Orm\Filter;
 
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGeneratorInterface;
 use ApiPlatform\Core\Exception\InvalidArgumentException;
-use Doctrine\Common\Persistence\ManagerRegistry;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Doctrine\ORM\QueryBuilder;
-use Psr\Log\LoggerInterface;
-use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Filters the collection by whether a property value exists or not.
@@ -34,11 +33,6 @@ use Symfony\Component\HttpFoundation\RequestStack;
 class ExistsFilter extends AbstractFilter
 {
     const QUERY_PARAMETER_KEY = 'exists';
-
-    public function __construct(ManagerRegistry $managerRegistry, RequestStack $requestStack, LoggerInterface $logger = null, array $properties = null)
-    {
-        parent::__construct($managerRegistry, $requestStack, $logger, $properties);
-    }
 
     /**
      * {@inheritdoc}
@@ -74,7 +68,7 @@ class ExistsFilter extends AbstractFilter
     {
         if (
             !isset($value[self::QUERY_PARAMETER_KEY]) ||
-            !$this->isPropertyEnabled($property) ||
+            !$this->isPropertyEnabled($property, $resourceClass) ||
             !$this->isPropertyMapped($property, $resourceClass, true) ||
             !$this->isNullableField($property, $resourceClass)
         ) {
@@ -101,11 +95,11 @@ class ExistsFilter extends AbstractFilter
         $alias = 'o';
         $field = $property;
 
-        if ($this->isPropertyNested($property)) {
-            list($alias, $field) = $this->addJoinsForNestedProperty($property, $alias, $queryBuilder, $queryNameGenerator);
+        if ($this->isPropertyNested($property, $resourceClass)) {
+            list($alias, $field) = $this->addJoinsForNestedProperty($property, $alias, $queryBuilder, $queryNameGenerator, $resourceClass);
         }
 
-        $propertyParts = $this->splitPropertyParts($property);
+        $propertyParts = $this->splitPropertyParts($property, $resourceClass);
         $metadata = $this->getNestedMetadata($resourceClass, $propertyParts['associations']);
 
         if ($metadata->hasAssociation($field)) {
@@ -138,7 +132,7 @@ class ExistsFilter extends AbstractFilter
      */
     protected function isNullableField(string $property, string $resourceClass): bool
     {
-        $propertyParts = $this->splitPropertyParts($property);
+        $propertyParts = $this->splitPropertyParts($property, $resourceClass);
         $metadata = $this->getNestedMetadata($resourceClass, $propertyParts['associations']);
 
         $field = $propertyParts['field'];

@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Util;
 
 use Symfony\Component\HttpFoundation\Request;
@@ -34,8 +36,8 @@ final class ErrorFormatGuesser
      */
     public static function guessErrorFormat(Request $request, array $errorFormats): array
     {
-        $requestFormat = $request->getRequestFormat(null);
-        if (null !== $requestFormat && isset($errorFormats[$requestFormat])) {
+        $requestFormat = $request->getRequestFormat('');
+        if ('' !== $requestFormat && isset($errorFormats[$requestFormat])) {
             return ['key' => $requestFormat, 'value' => $errorFormats[$requestFormat]];
         }
 

@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity;
 
 use ApiPlatform\Core\Annotation\ApiResource;
@@ -37,7 +39,7 @@ class DummyCar
     private $id;
 
     /**
-     * @var string Something else
+     * @var mixed Something else
      *
      * @ORM\OneToMany(targetEntity="DummyCarColor", mappedBy="car")
      *
@@ -56,7 +58,7 @@ class DummyCar
     }
 
     /**
-     * @return string
+     * @return mixed
      */
     public function getColors()
     {
@@ -64,7 +66,7 @@ class DummyCar
     }
 
     /**
-     * @param string $colors
+     * @param mixed $colors
      *
      * @return static
      */

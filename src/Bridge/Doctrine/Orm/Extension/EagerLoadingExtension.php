@@ -9,8 +9,11 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Bridge\Doctrine\Orm\Extension;
 
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\EagerLoadingTrait;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Util\QueryNameGeneratorInterface;
 use ApiPlatform\Core\Exception\PropertyNotFoundException;
 use ApiPlatform\Core\Exception\ResourceClassNotFoundException;
@@ -18,8 +21,10 @@ use ApiPlatform\Core\Exception\RuntimeException;
 use ApiPlatform\Core\Metadata\Property\Factory\PropertyMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Property\Factory\PropertyNameCollectionFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
+use ApiPlatform\Core\Serializer\SerializerContextBuilderInterface;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Doctrine\ORM\QueryBuilder;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Eager loads relations.
@@ -31,19 +36,27 @@ use Doctrine\ORM\QueryBuilder;
  */
 final class EagerLoadingExtension implements QueryCollectionExtensionInterface, QueryItemExtensionInterface
 {
+    use EagerLoadingTrait;
+
     private $propertyNameCollectionFactory;
     private $propertyMetadataFactory;
-    private $resourceMetadataFactory;
     private $maxJoins;
-    private $forceEager;
+    private $serializerContextBuilder;
+    private $requestStack;
 
-    public function __construct(PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory, PropertyMetadataFactoryInterface $propertyMetadataFactory, ResourceMetadataFactoryInterface $resourceMetadataFactory, int $maxJoins = 30, bool $forceEager = true)
+    /**
+     * @TODO move $fetchPartial after $forceEager (@soyuka) in 3.0
+     */
+    public function __construct(PropertyNameCollectionFactoryInterface $propertyNameCollectionFactory, PropertyMetadataFactoryInterface $propertyMetadataFactory, ResourceMetadataFactoryInterface $resourceMetadataFactory, int $maxJoins = 30, bool $forceEager = true, RequestStack $requestStack = null, SerializerContextBuilderInterface $serializerContextBuilder = null, bool $fetchPartial = false)
     {
         $this->propertyNameCollectionFactory = $propertyNameCollectionFactory;
         $this->propertyMetadataFactory = $propertyMetadataFactory;
         $this->resourceMetadataFactory = $resourceMetadataFactory;
         $this->maxJoins = $maxJoins;
         $this->forceEager = $forceEager;
+        $this->fetchPartial = $fetchPartial;
+        $this->serializerContextBuilder = $serializerContextBuilder;
+        $this->requestStack = $requestStack;
     }
 
     /**
@@ -57,15 +70,12 @@ final class EagerLoadingExtension implements QueryCollectionExtensionInterface, 
             $options = ['collection_operation_name' => $operationName];
         }
 
-        $forceEager = $this->isForceEager($resourceClass, $options);
+        $forceEager = $this->shouldOperationForceEager($resourceClass, $options);
+        $fetchPartial = $this->shouldOperationFetchPartial($resourceClass, $options);
 
-        try {
-            $groups = $this->getSerializerGroups($resourceClass, $options, 'normalization_context');
+        $groups = $this->getSerializerGroups($resourceClass, $options, 'normalization_context');
 
-            $this->joinRelations($queryBuilder, $queryNameGenerator, $resourceClass, $forceEager, $queryBuilder->getRootAliases()[0], $groups);
-        } catch (ResourceClassNotFoundException $resourceClassNotFoundException) {
-            //ignore the not found exception
-        }
+        $this->joinRelations($queryBuilder, $queryNameGenerator, $resourceClass, $forceEager, $fetchPartial, $queryBuilder->getRootAliases()[0], $groups);
     }
 
     /**
@@ -80,7 +90,8 @@ final class EagerLoadingExtension implements QueryCollectionExtensionInterface, 
             $options = ['item_operation_name' => $operationName];
         }
 
-        $forceEager = $this->isForceEager($resourceClass, $options);
+        $forceEager = $this->shouldOperationForceEager($resourceClass, $options);
+        $fetchPartial = $this->shouldOperationFetchPartial($resourceClass, $options);
 
         if (isset($context['groups'])) {
             $groups = ['serializer_groups' => $context['groups']];
@@ -90,7 +101,7 @@ final class EagerLoadingExtension implements QueryCollectionExtensionInterface, 
             $groups = $this->getSerializerGroups($resourceClass, $options, 'normalization_context');
         }
 
-        $this->joinRelations($queryBuilder, $queryNameGenerator, $resourceClass, $forceEager, $queryBuilder->getRootAliases()[0], $groups);
+        $this->joinRelations($queryBuilder, $queryNameGenerator, $resourceClass, $forceEager, $fetchPartial, $queryBuilder->getRootAliases()[0], $groups);
     }
 
     /**
@@ -107,7 +118,7 @@ final class EagerLoadingExtension implements QueryCollectionExtensionInterface, 
      *
      * @throws RuntimeException when the max number of joins has been reached
      */
-    private function joinRelations(QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, bool $forceEager, string $parentAlias, array $propertyMetadataOptions = [], bool $wasLeftJoin = false, int &$joinCount = 0)
+    private function joinRelations(QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, bool $forceEager, bool $fetchPartial, string $parentAlias, array $propertyMetadataOptions = [], bool $wasLeftJoin = false, int &$joinCount = 0)
     {
         if ($joinCount > $this->maxJoins) {
             throw new RuntimeException('The total number of joined relations has exceeded the specified maximum. Raise the limit if necessary.');
@@ -127,6 +138,7 @@ final class EagerLoadingExtension implements QueryCollectionExtensionInterface, 
                 continue;
             }
 
+            // We don't want to interfere with doctrine on this association
             if (false === $forceEager && ClassMetadataInfo::FETCH_EAGER !== $mapping['fetch']) {
                 continue;
             }
@@ -146,18 +158,23 @@ final class EagerLoadingExtension implements QueryCollectionExtensionInterface, 
             $queryBuilder->{$method}(sprintf('%s.%s', $parentAlias, $association), $associationAlias);
             ++$joinCount;
 
-            try {
-                $this->addSelect($queryBuilder, $mapping['targetEntity'], $associationAlias, $propertyMetadataOptions);
-            } catch (ResourceClassNotFoundException $resourceClassNotFoundException) {
-                continue;
+            if (true === $fetchPartial) {
+                try {
+                    $this->addSelect($queryBuilder, $mapping['targetEntity'], $associationAlias, $propertyMetadataOptions);
+                } catch (ResourceClassNotFoundException $resourceClassNotFoundException) {
+                    continue;
+                }
+            } else {
+                $queryBuilder->addSelect($associationAlias);
             }
 
+            // Avoid recursion
             if ($mapping['targetEntity'] === $resourceClass) {
                 $queryBuilder->addSelect($associationAlias);
                 continue;
             }
 
-            $this->joinRelations($queryBuilder, $queryNameGenerator, $mapping['targetEntity'], $forceEager, $associationAlias, $propertyMetadataOptions, $method === 'leftJoin', $joinCount);
+            $this->joinRelations($queryBuilder, $queryNameGenerator, $mapping['targetEntity'], $forceEager, $fetchPartial, $associationAlias, $propertyMetadataOptions, $method === 'leftJoin', $joinCount);
         }
     }
 
@@ -166,22 +183,25 @@ final class EagerLoadingExtension implements QueryCollectionExtensionInterface, 
         $select = [];
         $entityManager = $queryBuilder->getEntityManager();
         $targetClassMetadata = $entityManager->getClassMetadata($entity);
+        if ($targetClassMetadata->subClasses) {
+            $queryBuilder->addSelect($associationAlias);
+        } else {
+            foreach ($this->propertyNameCollectionFactory->create($entity) as $property) {
+                $propertyMetadata = $this->propertyMetadataFactory->create($entity, $property, $propertyMetadataOptions);
 
-        foreach ($this->propertyNameCollectionFactory->create($entity) as $property) {
-            $propertyMetadata = $this->propertyMetadataFactory->create($entity, $property, $propertyMetadataOptions);
+                if (true === $propertyMetadata->isIdentifier()) {
+                    $select[] = $property;
+                    continue;
+                }
 
-            if (true === $propertyMetadata->isIdentifier()) {
-                $select[] = $property;
-                continue;
+                //the field test allows to add methods to a Resource which do not reflect real database fields
+                if (true === $targetClassMetadata->hasField($property) && (true === $propertyMetadata->getAttribute('fetchable') || true === $propertyMetadata->isReadable())) {
+                    $select[] = $property;
+                }
             }
 
-            //the field test allows to add methods to a Resource which do not reflect real database fields
-            if (true === $targetClassMetadata->hasField($property) && true === $propertyMetadata->isReadable()) {
-                $select[] = $property;
-            }
+            $queryBuilder->addSelect(sprintf('partial %s.{%s}', $associationAlias, implode(',', $select)));
         }
-
-        $queryBuilder->addSelect(sprintf('partial %s.{%s}', $associationAlias, implode(',', $select)));
     }
 
     /**
@@ -195,6 +215,20 @@ final class EagerLoadingExtension implements QueryCollectionExtensionInterface, 
      */
     private function getSerializerGroups(string $resourceClass, array $options, string $context): array
     {
+        $request = null;
+
+        if (null !== $this->requestStack && null !== $this->serializerContextBuilder) {
+            $request = $this->requestStack->getCurrentRequest();
+        }
+
+        if (null !== $this->serializerContextBuilder && null !== $request) {
+            $contextFromRequest = $this->serializerContextBuilder->createFromRequest($request, $context === 'normalization_context');
+
+            if (isset($contextFromRequest['groups'])) {
+                return ['serializer_groups' => $contextFromRequest['groups']];
+            }
+        }
+
         $resourceMetadata = $this->resourceMetadataFactory->create($resourceClass);
 
         if (isset($options['collection_operation_name'])) {
@@ -210,28 +244,5 @@ final class EagerLoadingExtension implements QueryCollectionExtensionInterface, 
         }
 
         return ['serializer_groups' => $context['groups']];
-    }
-
-    /**
-     * Does an operation force eager?
-     *
-     * @param string $resourceClass
-     * @param array  $options
-     *
-     * @return bool
-     */
-    private function isForceEager(string $resourceClass, array $options): bool
-    {
-        $resourceMetadata = $this->resourceMetadataFactory->create($resourceClass);
-
-        if (isset($options['collection_operation_name'])) {
-            $forceEager = $resourceMetadata->getCollectionOperationAttribute($options['collection_operation_name'], 'force_eager', null, true);
-        } elseif (isset($options['item_operation_name'])) {
-            $forceEager = $resourceMetadata->getItemOperationAttribute($options['item_operation_name'], 'force_eager', null, true);
-        } else {
-            $forceEager = $resourceMetadata->getAttribute('force_eager');
-        }
-
-        return is_bool($forceEager) ? $forceEager : $this->forceEager;
     }
 }

@@ -9,9 +9,12 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Hydra\Serializer;
 
 use ApiPlatform\Core\Api\IriConverterInterface;
+use ApiPlatform\Core\Api\OperationType;
 use ApiPlatform\Core\Api\ResourceClassResolverInterface;
 use ApiPlatform\Core\DataProvider\PaginatorInterface;
 use ApiPlatform\Core\JsonLd\ContextBuilderInterface;
@@ -72,7 +75,12 @@ final class CollectionNormalizer implements NormalizerInterface, NormalizerAware
         $data = $this->addJsonLdContext($this->contextBuilder, $resourceClass, $context);
         $context = $this->initContext($resourceClass, $context);
 
-        $data['@id'] = $this->iriConverter->getIriFromResourceClass($resourceClass);
+        if (isset($context['operation_type']) && $context['operation_type'] === OperationType::SUBRESOURCE) {
+            $data['@id'] = $this->iriConverter->getSubresourceIriFromResourceClass($resourceClass, $context);
+        } else {
+            $data['@id'] = $this->iriConverter->getIriFromResourceClass($resourceClass);
+        }
+
         $data['@type'] = 'hydra:Collection';
 
         $data['hydra:member'] = [];

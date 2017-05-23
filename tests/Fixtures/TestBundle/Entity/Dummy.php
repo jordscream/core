@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity;
 
 use ApiPlatform\Core\Annotation\ApiProperty;
@@ -123,6 +125,7 @@ class Dummy
      * @var ArrayCollection Several dummies
      *
      * @ORM\ManyToMany(targetEntity="RelatedDummy")
+     * @ApiProperty(subresource=true)
      */
     public $relatedDummies;
 
@@ -153,6 +156,11 @@ class Dummy
     public function getId()
     {
         return $this->id;
+    }
+
+    public function setId($id)
+    {
+        $this->id = $id;
     }
 
     public function setName($name)

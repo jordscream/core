@@ -9,9 +9,13 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Bridge\Doctrine\Orm\Util;
 
 use Doctrine\Common\Persistence\ManagerRegistry;
+use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\ORM\Query\Expr\Join;
 use Doctrine\ORM\QueryBuilder;
 
 /**
@@ -80,7 +84,7 @@ final class QueryChecker
                 ->getManagerForClass($rootEntity)
                 ->getClassMetadata($rootEntity);
 
-            if ($isForeign ? $rootMetadata->isIdentifierComposite : $rootMetadata->containsForeignIdentifier) {
+            if ($rootMetadata instanceof ClassMetadata && ($isForeign ? $rootMetadata->isIdentifierComposite : $rootMetadata->containsForeignIdentifier)) {
                 return true;
             }
         }
@@ -146,6 +150,26 @@ final class QueryChecker
                             return true;
                         }
                     }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Determines whether the query builder already has a left join.
+     *
+     * @param QueryBuilder $queryBuilder
+     *
+     * @return bool
+     */
+    public static function hasLeftJoin(QueryBuilder $queryBuilder): bool
+    {
+        foreach ($queryBuilder->getDQLPart('join') as $dqlParts) {
+            foreach ($dqlParts as $dqlPart) {
+                if (Join::LEFT_JOIN === $dqlPart->getJoinType()) {
+                    return true;
                 }
             }
         }

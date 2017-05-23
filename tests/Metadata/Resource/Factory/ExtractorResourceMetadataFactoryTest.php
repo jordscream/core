@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Tests\Metadata\Resource\Factory;
 
 use ApiPlatform\Core\Metadata\Extractor\XmlExtractor;
@@ -17,7 +19,6 @@ use ApiPlatform\Core\Metadata\Resource\Factory\ExtractorResourceMetadataFactory;
 use ApiPlatform\Core\Metadata\Resource\Factory\ExtractorResourceNameCollectionFactory;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
-use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\Dummy;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\FileConfigDummy;
 
 /**
@@ -36,7 +37,6 @@ class ExtractorResourceMetadataFactoryTest extends FileConfigurationMetadataFact
 
         $resourceMetadataFactory = new ExtractorResourceMetadataFactory(new XmlExtractor([$configPath]));
         $resourceMetadata = $resourceMetadataFactory->create(FileConfigDummy::class);
-        $resourceMetadataDummy = $resourceMetadataFactory->create(Dummy::class);
 
         $this->assertInstanceOf(ResourceMetadata::class, $resourceMetadata);
         $this->assertEquals($expectedResourceMetadata, $resourceMetadata);
@@ -149,7 +149,6 @@ class ExtractorResourceMetadataFactoryTest extends FileConfigurationMetadataFact
     }
 
     /**
-     * @expectedDeprecation Configuring "%s" tags without using a parent "%ss" tag is deprecrated since API Platform 2.1 and will not be possible anymore in API Platform 3
      * @dataProvider resourceMetadataProvider
      */
     public function testXmlExistingParentResourceMetadataFactory(ResourceMetadata $expectedResourceMetadata)
@@ -175,7 +174,6 @@ class ExtractorResourceMetadataFactoryTest extends FileConfigurationMetadataFact
 
         $resourceMetadataFactory = new ExtractorResourceMetadataFactory(new YamlExtractor([$configPath]));
         $resourceMetadata = $resourceMetadataFactory->create(FileConfigDummy::class);
-        $resourceMetadataDummy = $resourceMetadataFactory->create(Dummy::class);
 
         $this->assertInstanceOf(ResourceMetadata::class, $resourceMetadata);
         $this->assertEquals($expectedResourceMetadata, $resourceMetadata);

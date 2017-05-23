@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Hal\Serializer;
 
 use ApiPlatform\Core\Exception\RuntimeException;
@@ -42,6 +44,8 @@ final class ItemNormalizer extends AbstractItemNormalizer
     public function normalize($object, $format = null, array $context = [])
     {
         $context['cache_key'] = $this->getHalCacheKey($format, $context);
+        $resourceClass = $this->resourceClassResolver->getResourceClass($object, $context['resource_class'] ?? null, true);
+        $context = $this->initContext($resourceClass, $context);
 
         $rawData = parent::normalize($object, $format, $context);
         if (!is_array($rawData)) {
@@ -93,7 +97,7 @@ final class ItemNormalizer extends AbstractItemNormalizer
      */
     private function getComponents($object, string $format = null, array $context)
     {
-        if (isset($this->componentsCache[$context['cache_key']])) {
+        if (false !== $context['cache_key'] && isset($this->componentsCache[$context['cache_key']])) {
             return $this->componentsCache[$context['cache_key']];
         }
 
@@ -135,7 +139,11 @@ final class ItemNormalizer extends AbstractItemNormalizer
             $components['links'][] = $relation;
         }
 
-        return $this->componentsCache[$context['cache_key']] = $components;
+        if (false !== $context['cache_key']) {
+            $this->componentsCache[$context['cache_key']] = $components;
+        }
+
+        return $components;
     }
 
     /**

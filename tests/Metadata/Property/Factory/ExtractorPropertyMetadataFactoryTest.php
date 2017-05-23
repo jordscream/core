@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Tests\Metadata\Property\Factory;
 
 use ApiPlatform\Core\Metadata\Extractor\XmlExtractor;
@@ -65,7 +67,7 @@ class ExtractorPropertyMetadataFactoryTest extends FileConfigurationMetadataFact
     {
         $configPath = __DIR__.'/../../../Fixtures/FileConfigurations/resourcenotfound.xml';
 
-        (new ExtractorPropertyMetadataFactory(new XmlExtractor([$configPath])))->create(\ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\ThisDoesNotExist::class, 'foo');
+        (new ExtractorPropertyMetadataFactory(new XmlExtractor([$configPath])))->create('ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\ThisDoesNotExist', 'foo');
     }
 
     /**
@@ -81,7 +83,7 @@ class ExtractorPropertyMetadataFactoryTest extends FileConfigurationMetadataFact
 
     /**
      * @expectedException \ApiPlatform\Core\Exception\InvalidArgumentException
-     * @expectedExceptionMessageRegExp /.+Element 'foo': This element is not expected\..+/
+     * @expectedExceptionMessageRegExp #.+Element '\{https://api-platform.com/schema/metadata\}foo': This element is not expected\..+#
      */
     public function testCreateWithInvalidXml()
     {
@@ -132,7 +134,7 @@ class ExtractorPropertyMetadataFactoryTest extends FileConfigurationMetadataFact
     {
         $configPath = __DIR__.'/../../../Fixtures/FileConfigurations/resourcenotfound.yml';
 
-        (new ExtractorPropertyMetadataFactory(new YamlExtractor([$configPath])))->create(\ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\ThisDoesNotExist::class, 'foo');
+        (new ExtractorPropertyMetadataFactory(new YamlExtractor([$configPath])))->create('ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\ThisDoesNotExist', 'foo');
     }
 
     /**

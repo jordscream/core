@@ -9,6 +9,8 @@
  * file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace ApiPlatform\Core\Hydra\Serializer;
 
 use ApiPlatform\Core\Api\OperationMethodResolverInterface;
@@ -288,7 +290,7 @@ final class DocumentationNormalizer implements NormalizerInterface
         }
 
         if (null === $type = $propertyMetadata->getType()) {
-            return;
+            return null;
         }
 
         if ($type->isCollection() && null !== $collectionType = $type->getCollectionValueType()) {
@@ -298,19 +300,15 @@ final class DocumentationNormalizer implements NormalizerInterface
         switch ($type->getBuiltinType()) {
             case Type::BUILTIN_TYPE_STRING:
                 return 'xmls:string';
-
             case Type::BUILTIN_TYPE_INT:
                 return 'xmls:integer';
-
             case Type::BUILTIN_TYPE_FLOAT:
                 return 'xmls:decimal';
-
             case Type::BUILTIN_TYPE_BOOL:
                 return 'xmls:boolean';
-
             case Type::BUILTIN_TYPE_OBJECT:
                 if (null === $className = $type->getClassName()) {
-                    return;
+                    return null;
                 }
 
                 if (is_a($className, \DateTimeInterface::class, true)) {
